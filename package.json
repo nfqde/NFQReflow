@@ -1,0 +1,24 @@
+{
+  "name": "nfqcomponent",
+  "version": "0.8.0",
+  "description": "Nfq Templating component for DOM rendering",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nfqde/NFQComponent.git"
+  },
+  "keywords": [
+    "Components",
+    "Rendering",
+    "Templating"
+  ],
+  "author": ".NFQ | Christoph Kruppe",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nfqde/NFQComponent/issues"
+  },
+  "homepage": "https://github.com/nfqde/NFQComponent#readme"
+}
