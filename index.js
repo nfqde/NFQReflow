@@ -1,6 +1,10 @@
 class NFQComponent {
     constructor() {
-        console.log('test');
+
+    }
+
+    render() {
+        
     }
 }
 
