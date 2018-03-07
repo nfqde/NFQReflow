@@ -2,11 +2,11 @@ import $ from 'jquery';
 import MD5 from './md5.js';
 
 class NFQReflowComponent {
-    constructor(parent) {
-        this.parent = parent || 'body';
+    constructor(params) {
+        this.parent = 'body';
         this.template = '';
         this.children = {};
-        this.params = {};
+        this.params = params || {};
 
         this.nodes = {
             childs: [],
@@ -61,7 +61,7 @@ class NFQReflowComponent {
 
             if (!this.children.hasOwnProperty(childMatches[1])
                 || (this.children.hasOwnProperty(childMatches[1])
-                && !this.children[childMatches[1]].prototype instanceof NFQReflowComponent)
+                && !this.children[childMatches[1]].component.prototype instanceof NFQReflowComponent)
             ) {
                 throw 'Error all Children have to be defined and must extend from NFQComponent';
             }
@@ -88,7 +88,7 @@ class NFQReflowComponent {
         let timeString = new Date().getUTCDate();
 
         for (child of this.nodes.childs) {
-            component = new this.children[child]();
+            component = new this.children[child].component(this.children[child].props);
             md5String = md5.transpile(timeString + child);
             parent = component.createParentNode();
             regex = new RegExp(`\\$\\{children\\.${child}\\}`);
