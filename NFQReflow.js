@@ -7,13 +7,12 @@ class NFQReflowComponent {
         this.template = '';
         this.children = {};
         this.params = params || {};
+        this.self = this;
 
         this.nodes = {
             childs: [],
             params: []
         };
-
-        this.firstRender = true;
     }
 
     render() {
@@ -32,6 +31,8 @@ class NFQReflowComponent {
             $(this.parent).append(this.template);
         }
 
+        this.self.onRendered();
+
         this.renderChildren();
     }
 
@@ -46,8 +47,6 @@ class NFQReflowComponent {
     parseTemplate() {
         this.loadNodes();
         this.parseParams();
-
-        this.template = $(this.template);
     }
 
     loadNodes() {
@@ -84,25 +83,77 @@ class NFQReflowComponent {
 
     renderChildren() {
         let child, component, parent, regex, md5String;
-        let md5 = new MD5();
-        let timeString = new Date().getUTCDate();
 
         for (child of this.nodes.childs) {
             component = new this.children[child].component(this.children[child].props);
-            md5String = md5.transpile(timeString + child);
+            this.children[child].component = component;
             parent = component.createParentNode();
             regex = new RegExp(`\\$\\{children\\.${child}\\}`);
 
-            this.parent.html(this.parent.html().replace(regex, `<div id="${md5String}"></div>`));
-            this.parent.filter(`#${md5String}`).add(this.parent.find(`#${md5String}`)).replaceWith(parent);
+            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+                return this.nodeType === 3;
+            }).each(function() {
+                if (regex.test($(this)[0].textContent)) {
+                    $(this).replaceWith(parent);
+                }
+            });
 
-            component.setParent($(parent));
+            component.setParent(parent);
             component.render();
         }
+
+        this.self.onChildsRendered();
+        this.self.onRegisterEvents();
+    }
+
+    reflowChildren() {
+        let child, component, parent, regex, md5String;
+
+        for (child of this.nodes.childs) {
+            component = this.children[child].component;
+            regex = new RegExp(`\\$\\{children\\.${child}\\}`);
+
+            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+                return this.nodeType === 3;
+            }).each(function() {
+                if (regex.test($(this)[0].textContent)) {
+                    $(this).replaceWith(parent);
+                }
+            });
+
+            component.reflow();
+        }
+
+        this.self.onChildsRendered();
+        this.self.onRegisterEvents();
     }
 
     escapeRegex(s) {
         return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    };
+
+    reflow() {
+        $(this.parent).empty();
+
+        this.loadNodes();
+        this.parseTemplate();
+        $(this.parent).append(this.template);
+
+        this.reflowChildren();
+
+        this.self.onReflow();
+    }
+
+    onRendered() {
+
+    };
+
+    onChildsRendered() {
+
+    };
+
+    onRegisterEvents() {
+
     };
 }
 
