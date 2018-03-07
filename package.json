@@ -1,14 +1,14 @@
 {
-  "name": "nfqcomponent",
+  "name": "NFQReflow",
   "version": "0.8.0",
   "description": "Nfq Templating component for DOM rendering",
-  "main": "index.js",
+  "main": "NFQReflow.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nfqde/NFQComponent.git"
+    "url": "git+https://github.com/nfqde/NFQReflow.git"
   },
   "keywords": [
     "Components",
@@ -18,7 +18,13 @@
   "author": ".NFQ | Christoph Kruppe",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/nfqde/NFQComponent/issues"
+    "url": "https://github.com/nfqde/NFQReflow/issues"
   },
-  "homepage": "https://github.com/nfqde/NFQComponent#readme"
+  "homepage": "https://github.com/nfqde/NFQReflow#readme",
+  "devDependencies": {
+    "babel-preset-env": "^1.6.1"
+  },
+  "dependencies": {
+    "jquery": "^3.3.1"
+  }
 }
