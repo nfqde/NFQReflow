@@ -2,16 +2,18 @@ import $ from 'jquery';
 import MD5 from './md5.js';
 
 class NFQReflowComponent {
-    constructor(params) {
+    constructor(props) {
         this.parent = 'body';
         this.template = '';
         this.children = {};
-        this.params = params || {};
+        this.props = props || {};
         this.self = this;
 
         this.nodes = {
             childs: [],
-            params: []
+            functions: [],
+            params: [],
+            empty: []
         };
     }
 
@@ -32,7 +34,6 @@ class NFQReflowComponent {
         }
 
         this.self.onRendered();
-
         this.renderChildren();
     }
 
@@ -46,28 +47,49 @@ class NFQReflowComponent {
 
     parseTemplate() {
         this.loadNodes();
+        this.parseFunctions();
+        this.parseEmpty();
         this.parseParams();
     }
 
-    loadNodes() {
-        let childRegex = /\$\{children.(.*?)\}/g;
-        let paramRegex = /\$\{params.(.*?)\}/g;
-        let childMatches;
-        let paramMatches;
+    loadNodes(template) {
+        let paramsRegex = /\$\{(.*?)\}/g;
+        let paramsMatches;
 
-        while (childMatches = childRegex.exec(this.template)) {
-            this.nodes.childs.push(childMatches[1]);
-
-            if (!this.children.hasOwnProperty(childMatches[1])
-                || (this.children.hasOwnProperty(childMatches[1])
-                && !this.children[childMatches[1]].component.prototype instanceof NFQReflowComponent)
-            ) {
-                throw 'Error all Children have to be defined and must extend from NFQComponent';
+        while (paramsMatches = paramsRegex.exec(this.template)) {
+            if (this.self.props.hasOwnProperty(paramsMatches[1])) {
+                if (typeof this.self.props[paramsMatches[1]] === 'object') {
+                    if (
+                        this.self.props[paramsMatches[1]].hasOwnProperty('component')
+                        && this.self.props[paramsMatches[1]].component.prototype instanceof NFQReflowComponent
+                    ) {
+                        this.nodes.childs.push(paramsMatches[1]);
+                    } else {
+                        throw 'Error all Children have to be defined and must extend from NFQComponent';
+                    }
+                } else if (typeof this.self.props[paramsMatches[1]] === 'function') {
+                    this.nodes.functions.push(paramsMatches[1]);
+                } else {
+                    this.nodes.params.push(paramsMatches[1]);
+                }
+            } else {
+                this.nodes.empty.push(paramsMatches[1]);
             }
         }
+    }
 
-        while (paramMatches = paramRegex.exec(this.template)) {
-            this.nodes.params.push(paramMatches[1]);
+    parseFunctions() {
+        let func, regex, ret;
+
+        for (func of this.nodes.functions) {
+            ret = this.self.props[func]();
+            regex = new RegExp(`\\$\\{${func}\\}`, 'g');
+
+            if (typeof ret === 'undefined') {
+                ret = '';
+            }
+
+            this.template = this.template.replace(regex, ret);
         }
     }
 
@@ -75,9 +97,19 @@ class NFQReflowComponent {
         let param, regex;
 
         for (param of this.nodes.params) {
-            regex = new RegExp(`\\$\\{params\\.${param}\\}`, 'g');
+            regex = new RegExp(`\\$\\{${param}\\}`, 'g');
 
-            this.template = this.template.replace(regex, this.params[param]);
+            this.template = this.template.replace(regex, this.self.props[param]);
+        }
+    }
+
+    parseEmpty() {
+        let param, regex;
+
+        for (param of this.nodes.empty) {
+            regex = new RegExp(`\\$\\{${param}\\}`, 'g');
+
+            this.template = this.template.replace(regex, '');
         }
     }
 
@@ -85,10 +117,10 @@ class NFQReflowComponent {
         let child, component, parent, regex, md5String;
 
         for (child of this.nodes.childs) {
-            component = new this.children[child].component(this.children[child].props);
-            this.children[child].component = component;
+            component = new this.self.props[child].component(this.self.props[child].props);
+            this.self.props[child].component = component;
             parent = component.createParentNode();
-            regex = new RegExp(`\\$\\{children\\.${child}\\}`);
+            regex = new RegExp(`\\$\\{${child}\\}`);
 
             this.parent.find(':not(iframe)').addBack().contents().filter(function() {
                 return this.nodeType === 3;
@@ -110,8 +142,8 @@ class NFQReflowComponent {
         let child, component, parent, regex, md5String;
 
         for (child of this.nodes.childs) {
-            component = this.children[child].component;
-            regex = new RegExp(`\\$\\{children\\.${child}\\}`);
+            component = this.self.props[child].component;
+            regex = new RegExp(`\\$\\{${child}\\}`);
 
             this.parent.find(':not(iframe)').addBack().contents().filter(function() {
                 return this.nodeType === 3;
@@ -135,7 +167,6 @@ class NFQReflowComponent {
     reflow() {
         $(this.parent).empty();
 
-        this.loadNodes();
         this.parseTemplate();
         $(this.parent).append(this.template);
 
