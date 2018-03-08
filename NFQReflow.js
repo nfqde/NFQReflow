@@ -6,11 +6,13 @@ class NFQReflowComponent {
         this.parent = 'body';
         this.template = '';
         this.children = {};
-        this.props = props || {};
+        this.defprops = props || {};
         this.self = this;
+        this.props = {};
 
         this.nodes = {
             childs: [],
+            multiChilds: [],
             functions: [],
             params: [],
             empty: []
@@ -19,6 +21,7 @@ class NFQReflowComponent {
 
     render() {
         let parentNode;
+        this.props = Object.assign({}, this.defprops, this.props);
 
         this.parseTemplate();
 
@@ -34,6 +37,7 @@ class NFQReflowComponent {
         }
 
         this.self.onRendered();
+        this.renderMultiChildren();
         this.renderChildren();
     }
 
@@ -52,16 +56,21 @@ class NFQReflowComponent {
         this.parseParams();
     }
 
-    loadNodes(template) {
+    loadNodes() {
         let paramsRegex = /\$\{(.*?)\}/g;
         let paramsMatches;
 
+        this.resetNodes();
+
         while (paramsMatches = paramsRegex.exec(this.template)) {
             if (this.self.props.hasOwnProperty(paramsMatches[1])) {
-                if (typeof this.self.props[paramsMatches[1]] === 'object') {
+                if (Array.isArray(this.self.props[paramsMatches[1]])) {
+                    this.nodes.multiChilds.push(paramsMatches[1]);
+                } else if (typeof this.self.props[paramsMatches[1]] === 'object') {
                     if (
                         this.self.props[paramsMatches[1]].hasOwnProperty('component')
-                        && this.self.props[paramsMatches[1]].component.prototype instanceof NFQReflowComponent
+                        && (this.self.props[paramsMatches[1]].component.prototype instanceof NFQReflowComponent
+                        || this.self.props[paramsMatches[1]].component.__proto__ instanceof NFQReflowComponent)
                     ) {
                         this.nodes.childs.push(paramsMatches[1]);
                     } else {
@@ -76,6 +85,16 @@ class NFQReflowComponent {
                 this.nodes.empty.push(paramsMatches[1]);
             }
         }
+    }
+
+    resetNodes() {
+        this.nodes = {
+            childs: [],
+            multiChilds: [],
+            functions: [],
+            params: [],
+            empty: []
+        };
     }
 
     parseFunctions() {
@@ -113,8 +132,74 @@ class NFQReflowComponent {
         }
     }
 
+    renderMultiChildren() {
+        let children, regex, i, component, parent, newParent;
+
+        for (children of this.nodes.multiChilds) {
+            regex = new RegExp(`\\$\\{${children}\\}`);
+            component = new this.self.props[children][0].component(this.self.props[children][0].props);
+            this.self.props[children][0].component = component;
+            parent = component.createParentNode();
+
+            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+                return this.nodeType === 3;
+            }).each(function() {
+                if (regex.test($(this)[0].textContent)) {
+                    $(this).replaceWith(parent);
+                    return false;
+                }
+            });
+
+            component.setParent(parent);
+            component.render();
+
+            for (i = 1; i < this.self.props[children].length; i++) {
+                component = new this.self.props[children][i].component(this.self.props[children][i].props);
+                this.self.props[children][i].component = component;
+                newParent = component.createParentNode();
+
+                parent.after(newParent);
+                component.setParent(newParent);
+                component.render();
+
+                parent = newParent;
+            }
+        }
+    }
+
+    reflowMultiChildren() {
+        let children, regex, i, component, parent, newParent;
+
+        for (children of this.nodes.multiChilds) {
+            regex = new RegExp(`\\$\\{${children}\\}`);
+            component = this.self.props[children][0].component;
+            parent = component.parent;
+
+            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+                return this.nodeType === 3;
+            }).each(function() {
+                if (regex.test($(this)[0].textContent)) {
+                    $(this).replaceWith(parent);
+                    return false;
+                }
+            });
+
+            component.reflow();
+
+            for (i = 1; i < this.self.props[children].length; i++) {
+                component = this.self.props[children][i].component;
+                newParent = component.parent;
+
+                parent.after(newParent);
+                component.reflow();
+
+                parent = newParent;
+            }
+        }
+    }
+
     renderChildren() {
-        let child, component, parent, regex, md5String;
+        let child, component, parent, regex;
 
         for (child of this.nodes.childs) {
             component = new this.self.props[child].component(this.self.props[child].props);
@@ -127,6 +212,7 @@ class NFQReflowComponent {
             }).each(function() {
                 if (regex.test($(this)[0].textContent)) {
                     $(this).replaceWith(parent);
+                    return false;
                 }
             });
 
@@ -139,7 +225,7 @@ class NFQReflowComponent {
     }
 
     reflowChildren() {
-        let child, component, parent, regex, md5String;
+        let child, component, regex;
 
         for (child of this.nodes.childs) {
             component = this.self.props[child].component;
@@ -149,7 +235,8 @@ class NFQReflowComponent {
                 return this.nodeType === 3;
             }).each(function() {
                 if (regex.test($(this)[0].textContent)) {
-                    $(this).replaceWith(parent);
+                    $(this).replaceWith(component.parent);
+                    return false;
                 }
             });
 
@@ -162,7 +249,7 @@ class NFQReflowComponent {
 
     escapeRegex(s) {
         return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    };
+    }
 
     reflow() {
         $(this.parent).empty();
@@ -170,22 +257,16 @@ class NFQReflowComponent {
         this.parseTemplate();
         $(this.parent).append(this.template);
 
+        this.reflowMultiChildren();
         this.reflowChildren();
 
         this.self.onReflow();
     }
 
-    onRendered() {
-
-    };
-
-    onChildsRendered() {
-
-    };
-
-    onRegisterEvents() {
-
-    };
+    onRendered() {}
+    onChildsRendered() {}
+    onRegisterEvents() {}
+    onReflow() {}
 }
 
 export default NFQReflowComponent;
