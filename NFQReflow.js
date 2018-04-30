@@ -1,14 +1,25 @@
 import $ from 'jquery';
-import MD5 from './md5.js';
+import NFQReflowTree from './NFQReflowTree';
+import NFQReflowTemplateParser from './NFQReflowTemplateParser';
 
+/**
+ * Reflow Basis Component.
+ */
 class NFQReflowComponent {
+    /**
+    * Constructor.
+    *
+    * @param {Object} props All child properties.
+    */
     constructor(props) {
-        this.parent = 'body';
+        this.parent = null;
         this.template = '';
+        this.props = props || {};
+        this.hash = null;
+        this.parentHash = this.props.parentHash || null;
         this.children = {};
-        this.defprops = props || {};
-        this.self = this;
-        this.props = {};
+
+        this.addToTree();
 
         this.nodes = {
             childs: [],
@@ -19,238 +30,221 @@ class NFQReflowComponent {
         };
     }
 
+    /**
+    * Adds itself to the tree.
+    */
+    addToTree() {
+        let renderedTemplate = new NFQReflowTemplateParser(this.props, this.children, this.template);
+
+        this.hash = NFQReflowTree.addNode(this, renderedTemplate);
+    }
+
+    /**
+    * Renders the component.
+    */
     render() {
-        let parentNode;
-        this.props = Object.assign({}, this.defprops, this.props);
+        let parent;
 
-        this.parseTemplate();
+        if (this.parent === null) {
+            parent = this.createParentNode();
+            parent.append(NFQReflowTree.find(this.hash).rendered);
 
-        if (this.parent === 'body') {
-            parentNode = this.createParentNode();
-            parentNode.append(this.template);
+            $('body').prepend(parent);
 
-            $(this.parent).prepend(parentNode);
-
-            this.parent = parentNode;
+            this.parent = parent;
         } else {
-            $(this.parent).append(this.template);
+            $(this.parent).append(NFQReflowTree.find(this.hash).rendered);
         }
 
-        this.self.onRendered();
-        this.renderMultiChildren();
+        this.onRendered();
+        console.log('test');
         this.renderChildren();
     }
 
+    /**
+    * Creates the parent node.
+    *
+    * @return {jQuery} Parent node.
+    */
     createParentNode() {
-        return $('<div class="' + this.constructor.name + '"></div>');
+        return $(`<div class="${this.constructor.name}"></div>`);
     }
 
+    /**
+    * Sets its own parent node.
+    *
+    * @param {jQuery} parent Parent node.
+    */
     setParent(parent) {
         this.parent = parent;
     }
 
-    parseTemplate() {
-        this.loadNodes();
-        this.parseFunctions();
-        this.parseEmpty();
-        this.parseParams();
-    }
-
-    loadNodes() {
-        let paramsRegex = /\$\{(.*?)\}/g;
-        let paramsMatches;
-
-        this.resetNodes();
-
-        while (paramsMatches = paramsRegex.exec(this.template)) {
-            if (this.self.props.hasOwnProperty(paramsMatches[1])) {
-                if (Array.isArray(this.self.props[paramsMatches[1]])) {
-                    this.nodes.multiChilds.push(paramsMatches[1]);
-                } else if (typeof this.self.props[paramsMatches[1]] === 'object') {
-                    if (
-                        this.self.props[paramsMatches[1]].hasOwnProperty('component')
-                        && (this.self.props[paramsMatches[1]].component.prototype instanceof NFQReflowComponent
-                        || this.self.props[paramsMatches[1]].component.__proto__ instanceof NFQReflowComponent)
-                    ) {
-                        this.nodes.childs.push(paramsMatches[1]);
-                    } else {
-                        throw 'Error all Children have to be defined and must extend from NFQComponent';
-                    }
-                } else if (typeof this.self.props[paramsMatches[1]] === 'function') {
-                    this.nodes.functions.push(paramsMatches[1]);
-                } else {
-                    this.nodes.params.push(paramsMatches[1]);
-                }
-            } else {
-                this.nodes.empty.push(paramsMatches[1]);
-            }
-        }
-    }
-
-    resetNodes() {
-        this.nodes = {
-            childs: [],
-            multiChilds: [],
-            functions: [],
-            params: [],
-            empty: []
-        };
-    }
-
-    parseFunctions() {
-        let func, regex, ret;
-
-        for (func of this.nodes.functions) {
-            ret = this.self.props[func]();
-            regex = new RegExp(`\\$\\{${func}\\}`, 'g');
-
-            if (typeof ret === 'undefined') {
-                ret = '';
-            }
-
-            this.template = this.template.replace(regex, ret);
-        }
-    }
-
-    parseParams() {
-        let param, regex;
-
-        for (param of this.nodes.params) {
-            regex = new RegExp(`\\$\\{${param}\\}`, 'g');
-
-            this.template = this.template.replace(regex, this.self.props[param]);
-        }
-    }
-
-    parseEmpty() {
-        let param, regex;
-
-        for (param of this.nodes.empty) {
-            regex = new RegExp(`\\$\\{${param}\\}`, 'g');
-
-            this.template = this.template.replace(regex, '');
-        }
-    }
-
-    renderMultiChildren() {
-        let children, regex, i, component, parent, newParent;
-
-        for (children of this.nodes.multiChilds) {
-            regex = new RegExp(`\\$\\{${children}\\}`);
-            component = new this.self.props[children][0].component(this.self.props[children][0].props);
-            this.self.props[children][0].component = component;
-            parent = component.createParentNode();
-
-            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
-                return this.nodeType === 3;
-            }).each(function() {
-                if (regex.test($(this)[0].textContent)) {
-                    $(this).replaceWith(parent);
-                    return false;
-                }
-            });
-
-            component.setParent(parent);
-            component.render();
-
-            for (i = 1; i < this.self.props[children].length; i++) {
-                component = new this.self.props[children][i].component(this.self.props[children][i].props);
-                this.self.props[children][i].component = component;
-                newParent = component.createParentNode();
-
-                parent.after(newParent);
-                component.setParent(newParent);
-                component.render();
-
-                parent = newParent;
-            }
-        }
-    }
-
-    reflowMultiChildren() {
-        let children, regex, i, component, parent, newParent;
-
-        for (children of this.nodes.multiChilds) {
-            regex = new RegExp(`\\$\\{${children}\\}`);
-            component = this.self.props[children][0].component;
-            parent = component.parent;
-
-            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
-                return this.nodeType === 3;
-            }).each(function() {
-                if (regex.test($(this)[0].textContent)) {
-                    $(this).replaceWith(parent);
-                    return false;
-                }
-            });
-
-            component.reflow();
-
-            for (i = 1; i < this.self.props[children].length; i++) {
-                component = this.self.props[children][i].component;
-                newParent = component.parent;
-
-                parent.after(newParent);
-                component.reflow();
-
-                parent = newParent;
-            }
-        }
-    }
-
+    /**
+    * Renders child components.
+    */
     renderChildren() {
-        let child, component, parent, regex;
+        let param, child, regex;
 
-        for (child of this.nodes.childs) {
-            component = new this.self.props[child].component(this.self.props[child].props);
-            this.self.props[child].component = component;
-            parent = component.createParentNode();
-            regex = new RegExp(`\\$\\{${child}\\}`);
+        for ([param, child] of Object.entries(this.children)) {
+            regex = new RegExp(`\\$\\{${this.escapeRegex(param)}\\}`);
 
-            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
-                return this.nodeType === 3;
-            }).each(function() {
-                if (regex.test($(this)[0].textContent)) {
-                    $(this).replaceWith(parent);
-                    return false;
-                }
-            });
+            if (Array.isArray(child)) {
 
-            component.setParent(parent);
-            component.render();
+            } else {
+
+            }
         }
-
-        this.self.onChildsRendered();
-        this.self.onRegisterEvents();
     }
 
-    reflowChildren() {
-        let child, component, regex;
+    /**
+    * Builds component.
+    */
+    buildComponent() {
 
-        for (child of this.nodes.childs) {
-            component = this.self.props[child].component;
-            regex = new RegExp(`\\$\\{${child}\\}`);
-
-            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
-                return this.nodeType === 3;
-            }).each(function() {
-                if (regex.test($(this)[0].textContent)) {
-                    $(this).replaceWith(component.parent);
-                    return false;
-                }
-            });
-
-            component.reflow();
-        }
-
-        this.self.onChildsRendered();
-        this.self.onRegisterEvents();
     }
 
+    //    /**
+    //    * Renders child arrays.
+    //    */
+    //    renderMultiChildren() {
+    //            regex = new RegExp(`\\$\\{${children}\\}`);
+    //            component = new this.props[children][0].component(this.props[children][0].props);
+    //            this.props[children][0].component = component;
+    //            parent = component.createParentNode();
+    //
+    //            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+    //                return this.nodeType === 3;
+    //            }).each(function() {
+    //                if (regex.test($(this)[0].textContent)) {
+    //                    $(this).replaceWith(parent);
+    //
+    //                    return false;
+    //                }
+    //            });
+    //
+    //            component.setParent(parent);
+    //            component.render();
+    //
+    //            for (i = 1; i < this.props[children].length; i++) {
+    //                component = new this.props[children][i].component(this.props[children][i].props);
+    //                this.props[children][i].component = component;
+    //                newParent = component.createParentNode();
+    //
+    //                parent.after(newParent);
+    //                component.setParent(newParent);
+    //                component.render();
+    //
+    //                parent = newParent;
+    //            }
+    //        }
+    //    }
+    //
+    //    /**
+    //    * Rerenders Child arrays.
+    //    */
+    //    reflowMultiChildren() {
+    //        let children, regex, i, component, parent, newParent;
+    //
+    //        for (children of this.nodes.multiChilds) {
+    //            regex = new RegExp(`\\$\\{${children}\\}`);
+    //            component = this.props[children][0].component;
+    //            parent = component.parent;
+    //
+    //            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+    //                return this.nodeType === 3;
+    //            }).each(function() {
+    //                if (regex.test($(this)[0].textContent)) {
+    //                    $(this).replaceWith(parent);
+    //
+    //                    return false;
+    //                }
+    //            });
+    //
+    //            component.reflow();
+    //
+    //            for (i; i < this.props[children].length; i++) {
+    //                component = this.props[children][i].component;
+    //                newParent = component.parent;
+    //
+    //                parent.after(newParent);
+    //                component.reflow();
+    //
+    //                parent = newParent;
+    //            }
+    //        }
+    //    }
+    //
+    //    /**
+    //    * Renders Child Components.
+    //    */
+    //    renderChildren() {
+    //        let child, component, parent, regex;
+    //
+    //        for (child of this.nodes.childs) {
+    //            component = new this.props[child].component(this.props[child].props);
+    //            this.props[child].component = component;
+    //            parent = component.createParentNode();
+    //            regex = new RegExp(`\\$\\{${child}\\}`);
+    //
+    //            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+    //                return this.nodeType === 3;
+    //            }).each(function() {
+    //                if (regex.test($(this)[0].textContent)) {
+    //                    $(this).replaceWith(parent);
+    //
+    //                    return false;
+    //                }
+    //            });
+    //
+    //            component.setParent(parent);
+    //            component.render();
+    //        }
+    //
+    //        this.onChildsRendered();
+    //        this.onRegisterEvents();
+    //    }
+    //
+    //    /**
+    //    * Rerenders child Components.
+    //    */
+    //    reflowChildren() {
+    //        let child, component, regex;
+    //
+    //        for (child of this.nodes.childs) {
+    //            component = this.props[child].component;
+    //            regex = new RegExp(`\\$\\{${child}\\}`);
+    //
+    //            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+    //                return this.nodeType === 3;
+    //            }).each(function() {
+    //                if (regex.test($(this)[0].textContent)) {
+    //                    $(this).replaceWith(component.parent);
+    //
+    //                    return false;
+    //                }
+    //            });
+    //
+    //            component.reflow();
+    //        }
+    //
+    //        this.onChildsRendered();
+    //        this.onRegisterEvents();
+    //    }
+
+    /**
+    * Escapes an regex.
+    *
+    * @param {string} s String to escape.
+    *
+    * @return {string} Escaped regex.
+    */
     escapeRegex(s) {
         return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     }
 
+    /**
+    * Triggers an reflow.
+    */
     reflow() {
         $(this.parent).empty();
 
@@ -260,13 +254,24 @@ class NFQReflowComponent {
         this.reflowMultiChildren();
         this.reflowChildren();
 
-        this.self.onReflow();
+        this.onReflow();
     }
 
-    onRendered() {}
-    onChildsRendered() {}
-    onRegisterEvents() {}
-    onReflow() {}
+    onRendered() {
+        /* For convenience. */
+    }
+
+    onRegisterEvents() {
+        /* For convenience. */
+    }
+
+    onChildsRendered() {
+        /* For convenience. */
+    }
+
+    onReflow() {
+        /* For convenience. */
+    }
 }
 
 export default NFQReflowComponent;
