@@ -16,7 +16,10 @@ export default class NFQReflowTemplateParser {
         this.children = children;
         this.template = template;
 
-        return this.parse();
+        this.nodes = {
+            functions: [],
+            params: []
+        };
     }
 
     /**
@@ -24,21 +27,33 @@ export default class NFQReflowTemplateParser {
      */
     parse() {
         let regex = /\$\{(.*?)\}/g;
-        let matches, match;
+        let matches, match, functions, param;
 
         while ((matches = regex.exec(this.template)) !== null) {
             match = matches[1];
 
-            if (this.props.hasOwnProperty(match) || this.children.hasOwnProperty(match)) {
+            if (this.props.hasOwnProperty(match)) {
                 if (typeof this.props[match] === 'function') {
                     this.nodes.functions.push(match);
                 } else {
-                    this.parseParams(match);
+                    this.nodes.params.push(match);
                 }
+            } else if (this.children.hasOwnProperty(match)) {
+                continue;
             } else {
                 this.parseEmpty(match);
             }
         }
+
+        for (functions of this.nodes.functions) {
+            this.parseFunctions(functions);
+        }
+
+        for (param of this.nodes.params) {
+            this.parseParams(param);
+        }
+
+        return this.template;
     }
 
     /**

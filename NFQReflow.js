@@ -13,13 +13,11 @@ class NFQReflowComponent {
     */
     constructor(props) {
         this.parent = null;
-        this.template = '';
+        this.template;
         this.props = props || {};
         this.hash = null;
         this.parentHash = this.props.parentHash || null;
         this.children = {};
-
-        this.addToTree();
 
         this.nodes = {
             childs: [],
@@ -34,7 +32,7 @@ class NFQReflowComponent {
     * Adds itself to the tree.
     */
     addToTree() {
-        let renderedTemplate = new NFQReflowTemplateParser(this.props, this.children, this.template);
+        let renderedTemplate = new NFQReflowTemplateParser(this.props, this.children, this.template).parse();
 
         this.hash = NFQReflowTree.addNode(this, renderedTemplate);
     }
@@ -44,6 +42,8 @@ class NFQReflowComponent {
     */
     render() {
         let parent;
+
+        this.addToTree();
 
         if (this.parent === null) {
             parent = this.createParentNode();
@@ -57,7 +57,6 @@ class NFQReflowComponent {
         }
 
         this.onRendered();
-        console.log('test');
         this.renderChildren();
     }
 
@@ -83,96 +82,52 @@ class NFQReflowComponent {
     * Renders child components.
     */
     renderChildren() {
-        let param, child, regex;
+        let param, child, component, parentNode, regex, replaceWith;
 
         for ([param, child] of Object.entries(this.children)) {
             regex = new RegExp(`\\$\\{${this.escapeRegex(param)}\\}`);
 
-            if (Array.isArray(child)) {
+            child = this.addSpecialProps(child);
 
-            } else {
+            component = new child.component(child.props);
+            parentNode = component.createParentNode();
 
-            }
+            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
+                return this.nodeType === 3;
+            }).each(function() {
+                if (regex.test($(this)[0].textContent)) {
+                    replaceWith = $(this)[0].textContent.replace(regex, `<span id="${param}"></span>`);
+                    $(this).replaceWith(replaceWith);
+                    $(`#${param}`).replaceWith(parentNode);
+
+                    return false;
+                }
+            });
+
+            component.setParent(parentNode);
+            component.render();
         }
     }
 
     /**
-    * Builds component.
+    * Adds special parent Hash property.
+    *
+    * @param {Object} child Property Object.
+    *
+    * @return {Object} Returns the object with new properties.
     */
-    buildComponent() {
+    addSpecialProps(child) {
+        const component = child;
 
+        if (typeof component.props === 'undefined') {
+            component.props = {};
+        }
+
+        component.props.parentHash = this.hash;
+
+        return component;
     }
 
-    //    /**
-    //    * Renders child arrays.
-    //    */
-    //    renderMultiChildren() {
-    //            regex = new RegExp(`\\$\\{${children}\\}`);
-    //            component = new this.props[children][0].component(this.props[children][0].props);
-    //            this.props[children][0].component = component;
-    //            parent = component.createParentNode();
-    //
-    //            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
-    //                return this.nodeType === 3;
-    //            }).each(function() {
-    //                if (regex.test($(this)[0].textContent)) {
-    //                    $(this).replaceWith(parent);
-    //
-    //                    return false;
-    //                }
-    //            });
-    //
-    //            component.setParent(parent);
-    //            component.render();
-    //
-    //            for (i = 1; i < this.props[children].length; i++) {
-    //                component = new this.props[children][i].component(this.props[children][i].props);
-    //                this.props[children][i].component = component;
-    //                newParent = component.createParentNode();
-    //
-    //                parent.after(newParent);
-    //                component.setParent(newParent);
-    //                component.render();
-    //
-    //                parent = newParent;
-    //            }
-    //        }
-    //    }
-    //
-    //    /**
-    //    * Rerenders Child arrays.
-    //    */
-    //    reflowMultiChildren() {
-    //        let children, regex, i, component, parent, newParent;
-    //
-    //        for (children of this.nodes.multiChilds) {
-    //            regex = new RegExp(`\\$\\{${children}\\}`);
-    //            component = this.props[children][0].component;
-    //            parent = component.parent;
-    //
-    //            this.parent.find(':not(iframe)').addBack().contents().filter(function() {
-    //                return this.nodeType === 3;
-    //            }).each(function() {
-    //                if (regex.test($(this)[0].textContent)) {
-    //                    $(this).replaceWith(parent);
-    //
-    //                    return false;
-    //                }
-    //            });
-    //
-    //            component.reflow();
-    //
-    //            for (i; i < this.props[children].length; i++) {
-    //                component = this.props[children][i].component;
-    //                newParent = component.parent;
-    //
-    //                parent.after(newParent);
-    //                component.reflow();
-    //
-    //                parent = newParent;
-    //            }
-    //        }
-    //    }
     //
     //    /**
     //    * Renders Child Components.
