@@ -2,7 +2,7 @@
   "name": "NFQReflow",
   "version": "0.8.0",
   "description": "Nfq Templating component for DOM rendering",
-  "main": "NFQReflow.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

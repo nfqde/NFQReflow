@@ -8,8 +8,6 @@ export default class NFQReflowTemplateParser {
      * @param {Object} props    All properties.
      * @param {Object} children All child definitions.
      * @param {String} template Template string to parse.
-     *
-     * @returns {String} Parsed template.
      */
     constructor(props, children, template) {
         this.props = props;
@@ -24,6 +22,8 @@ export default class NFQReflowTemplateParser {
 
     /**
      * Parses an Component Template.
+     *
+     * @return {String} Rendered Template.
      */
     parse() {
         let regex = /\$\{(.*?)\}/g;
@@ -102,6 +102,8 @@ export default class NFQReflowTemplateParser {
     * @return {string} Escaped regex.
     */
     escapeRegex(s) {
+        /* eslint-disable no-useless-escape */
         return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        /* eslint-enable no-useless-escape */
     }
 }
