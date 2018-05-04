@@ -6,7 +6,6 @@ class NFQReflowStoreClass {
     createStore(name) {
         if (localStorage.getItem(name) === null) {
             localStorage.setItem(name, '{}');
-            sessionStorage.setItem(name, '{}');
         }
     }
 
@@ -47,6 +46,12 @@ class NFQReflowStoreClass {
         for (index in this.registeredComponents[storeName][storeValue]) {
             this.registeredComponents[storeName][storeValue][index]();
         }
+    }
+
+    getFromStore(storeName, storeValue) {
+        let store = JSON.parse(localStorage.getItem(storeName));
+
+        return store[storeValue] || null;
     }
 }
 
