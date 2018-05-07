@@ -1,57 +1,45 @@
+import objectPath from 'object-path';
+
 class NFQReflowStoreClass {
     constructor() {
         this.registeredComponents = {};
+        this.stores = {};
     }
 
     createStore(name) {
-        if (localStorage.getItem(name) === null) {
+        if (!this.stores.hasOwnProperty(name)) {
+            this.stores[name] = {};
+        }
+        if (localStorage.getItem(name) !== null) {
+            this.stores[name] = JSON.parse(localStorage.getItem(name));
+        } else {
             localStorage.setItem(name, '{}');
         }
     }
 
-    getStore(name) {
-        let ret;
-
-        if (localStorage.getItem(name) === null) {
-            ret = null;
-
-            throw new Error('Create store first before requirering it.');
-        } else {
-            ret = localStorage.getItem(name);
-        }
-
-        return ret;
+    load(storeName, storePath) {
+        return objectPath.get(this.stores[storeName], storePath);
     }
 
-    registerForUpdates(componentFunction, storeName, storeValue) {
+    registerForUpdates(component, callbackName, storeName) {
         if (!this.registeredComponents.hasOwnProperty(storeName)) {
-            this.registeredComponents[storeName] = {};
+            this.registeredComponents[storeName] = [];
         }
 
-        if (!this.registeredComponents[storeName].hasOwnProperty(storeValue)) {
-            this.registeredComponents[storeName][storeValue] = [];
+        if (this.registeredComponents[storeName].indexOf({comp: component, callback: callbackName}) === -1) {
+            this.registeredComponents[storeName].push({comp: component, callback: callbackName});
         }
-
-        this.registeredComponents[storeName][storeValue].push(componentFunction);
     }
 
-    saveToStore(storeName, storeValue, param) {
+    saveToStore(storeName, storePath, storeValue) {
         let index;
-        let store = JSON.parse(localStorage.getItem(storeName));
 
-        store[storeValue] = param;
+        objectPath.set(this.stores[storeName], storePath, storeValue);
+        localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
 
-        localStorage.setItem(storeName, JSON.stringify(store));
-
-        for (index in this.registeredComponents[storeName][storeValue]) {
-            this.registeredComponents[storeName][storeValue][index]();
+        for (index in this.registeredComponents[storeName]) {
+            this.registeredComponents[storeName][index].comp[this.registeredComponents[storeName][index].callback]();
         }
-    }
-
-    getFromStore(storeName, storeValue) {
-        let store = JSON.parse(localStorage.getItem(storeName));
-
-        return store[storeValue] || null;
     }
 }
 
