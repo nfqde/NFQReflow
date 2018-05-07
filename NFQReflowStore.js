@@ -41,6 +41,18 @@ class NFQReflowStoreClass {
             this.registeredComponents[storeName][index].comp[this.registeredComponents[storeName][index].callback]();
         }
     }
+
+    clean(hash) {
+        let store, index;
+
+        for (store in this.registeredComponents) {
+            for (index in this.registeredComponents[store]) {
+                if (this.registeredComponents[store][index].comp.hash === hash) {
+                    this.registeredComponents[store].splice(index, 1);
+                }
+            }
+        }
+    }
 }
 
 const NFQReflowStore = new NFQReflowStoreClass();

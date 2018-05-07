@@ -1,3 +1,5 @@
+import NFQReflowStore from './NFQReflowStore';
+
 /**
  * Reflow Tree Singleton.
  */
@@ -118,6 +120,7 @@ class NFQReflowTreeClass {
         /* eslint-enable no-magic-numbers */
 
         for (index in diff) {
+            NFQReflowStore.clean(node.hash);
             this.removeNode(diff[index]);
         }
     }
