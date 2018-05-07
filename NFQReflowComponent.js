@@ -54,7 +54,7 @@ class NFQReflowComponent {
                 $(this.parent).html(NFQReflowTree.find(this.hash).rendered);
             }
 
-            this.onRendered.call(this);
+            requestAnimationFrame(this.onRendered.bind(this));
             this.renderChildren();
         }
 
@@ -112,8 +112,8 @@ class NFQReflowComponent {
             i++;
         }
 
-        this.onChildsRendered.call(this);
-        this.onRegisterEvents.call(this);
+        requestAnimationFrame(this.onChildsRendered.bind(this));
+        requestAnimationFrame(this.onRegisterEvents.bind(this));
     }
 
     /**
