@@ -7,15 +7,22 @@ class NFQReflowStoreClass {
     }
 
     createStore(name, tmp) {
+        let store;
+
         if (!this.stores.hasOwnProperty(name)) {
             this.stores[name] = {};
         }
+
         if (!tmp) {
-            if (localStorage.getItem(name) !== null) {
-                this.stores[name] = JSON.parse(localStorage.getItem(name));
-            } else {
-                localStorage.setItem(name, '{}');
-            }
+            store = localStorage;
+        } else {
+            store = sessionStorage;
+        }
+
+        if (store.getItem(name) !== null) {
+            this.stores[name] = JSON.parse(store.getItem(name));
+        } else {
+            store.setItem(name, '{}');
         }
     }
 
