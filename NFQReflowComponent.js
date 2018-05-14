@@ -55,8 +55,9 @@ class NFQReflowComponent {
             }
 
             requestAnimationFrame(this.onRendered.bind(this));
-            this.renderChildren();
         }
+
+        this.renderChildren();
 
         return this.hash;
     }
