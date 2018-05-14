@@ -60,14 +60,18 @@ class NFQReflowStoreClass {
     }
 
     clean(hash) {
-        let store, index;
+        let store, index, indizes = [], i;
 
         for (store in this.registeredComponents) {
             for (index in this.registeredComponents[store]) {
                 if (this.registeredComponents[store][index].comp.hash === hash) {
-                    this.registeredComponents[store].splice(index, 1);
+                    indizes.push(index);
                 }
             }
+        }
+
+        for (i = indizes.length - 1; i >= 0; i--) {
+            this.registeredComponents[store].splice(indizes[i], 1);
         }
     }
 }
