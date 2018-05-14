@@ -122,7 +122,7 @@ class NFQReflowTreeClass {
         /* eslint-enable no-magic-numbers */
 
         for (index in diff) {
-            NFQReflowStore.clean(node.hash);
+            NFQReflowStore.clean(diff[index]);
             this.removeNode(diff[index]);
         }
     }
