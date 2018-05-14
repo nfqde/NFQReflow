@@ -61,6 +61,8 @@ class NFQReflowComponent {
             this.renderChildren();
         }
 
+        requestAnimationFrame(this.onRegisterEvents.bind(this));
+
         return this.hash;
     }
 
@@ -120,7 +122,6 @@ class NFQReflowComponent {
         }
 
         requestAnimationFrame(this.onChildsRendered.bind(this));
-        requestAnimationFrame(this.onRegisterEvents.bind(this));
     }
 
     /**
