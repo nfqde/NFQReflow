@@ -28,16 +28,16 @@ class NFQReflowStoreClass {
     }
 
     load(storeName, storePath) {
-        return objectPath.get(this.stores[storeName], storePath);
+        return objectPath.get(this.stores[storeName], storePath) || null;
     }
 
-    registerForUpdates(component, callbackName, storeName) {
+    registerForUpdates(component, callbackName, storeName, storePath) {
         if (!this.registeredComponents.hasOwnProperty(storeName)) {
             this.registeredComponents[storeName] = [];
         }
 
-        if (this.registeredComponents[storeName].indexOf({comp: component, callback: callbackName}) === -1) {
-            this.registeredComponents[storeName].push({comp: component, callback: callbackName});
+        if (this.registeredComponents[storeName].indexOf({comp: component, callback: callbackName, path: storePath}) === -1) {
+            this.registeredComponents[storeName].push({comp: component, callback: callbackName, path: storePath});
         }
     }
 
@@ -53,7 +53,9 @@ class NFQReflowStoreClass {
         }
 
         for (index in this.registeredComponents[storeName]) {
-            this.registeredComponents[storeName][index].comp[this.registeredComponents[storeName][index].callback]();
+            if (this.registeredComponents[storeName][index].path === storePath) {
+                this.registeredComponents[storeName][index].comp[this.registeredComponents[storeName][index].callback]();
+            }
         }
     }
 
