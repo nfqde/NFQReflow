@@ -207,6 +207,19 @@ class NFQReflowComponent {
     }
 
     /**
+    * Adds an double Save eventHandler.
+    *
+    * @param {jQuery}   selector DOM selection.
+    * @param {string}   event    Event Type.
+    * @param {function} callback Event Handler.
+    *
+    * @return {jQuery} Found jQuery DOM object.
+    */
+    on(selector, event, callback) {
+        selector.off(event).on(event, callback);
+    }
+
+    /**
      * Sets the value of an property and renders the component.
      *
      * @param {Mixed} props The property object to set.
@@ -223,6 +236,11 @@ class NFQReflowComponent {
         this.render();
     }
 
+    /**
+     * Sets the value of all properties.
+     *
+     * @param {Mixed} props The property object to set.
+     */
     setProps(props) {
         let oldProps = this.props;
 
