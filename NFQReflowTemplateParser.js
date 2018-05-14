@@ -13,6 +13,7 @@ export default class NFQReflowTemplateParser {
         this.props = props;
         this.children = children;
         this.template = template;
+        this.foundChildren = [];
 
         this.nodes = {
             functions: [],
@@ -54,6 +55,26 @@ export default class NFQReflowTemplateParser {
         }
 
         return this.template;
+    }
+
+    /**
+     * Parses an Component Template for Childs.
+     *
+     * @return {mixed} Rendered Template childs.
+     */
+    getUsedChilds() {
+        let regex = /\$\{(.*?)\}/g;
+        let matches, match;
+
+        while ((matches = regex.exec(this.template)) !== null) {
+            match = matches[1];
+
+            if (this.children.hasOwnProperty(match)) {
+                this.foundChildren.push(match);
+            }
+        }
+
+        return this.foundChildren;
     }
 
     /**

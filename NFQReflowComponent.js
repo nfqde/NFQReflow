@@ -27,7 +27,10 @@ class NFQReflowComponent {
     * Adds itself to the tree.
     */
     addToTree() {
-        let renderedTemplate = new NFQReflowTemplateParser(this.props, this.children, this.template).parse();
+        let parser = new NFQReflowTemplateParser(this.props, this.children, this.template);
+        let renderedTemplate = parser.parse();
+
+        this.usedChildren = parser.getUsedChilds();
 
         this.hash = NFQReflowTree.addNode(this, renderedTemplate);
     }
@@ -55,9 +58,8 @@ class NFQReflowComponent {
             }
 
             requestAnimationFrame(this.onRendered.bind(this));
+            this.renderChildren();
         }
-
-        this.renderChildren();
 
         return this.hash;
     }
@@ -86,9 +88,13 @@ class NFQReflowComponent {
     renderChildren() {
         let param, child, regex, component, usableProperties, parentNode, i = 0;
 
-        NFQReflowTree.clean(this);
+        NFQReflowTree.clean(this, this.usedChildren);
 
         for ([param, child] of Object.entries(this.children)) {
+            if (this.usedChildren.indexOf(param) === -1) {
+                continue;
+            }
+
             regex = new RegExp(`\\$\\{${this.escapeRegex(param)}\\}`);
 
             usableProperties = this.addSpecialProps(child, i);
@@ -205,17 +211,21 @@ class NFQReflowComponent {
      * @param {Mixed} props The property object to set.
      */
     setProp(props) {
-        let prop, val;
+        let prop, val, oldProps = this.props;
 
         if (typeof props === 'object') {
-            for ([prop, val] of Object.entries(props)) {
-                this.props[prop] = val;
-            }
+            this.props = Object.assign(oldProps, props);
         } else {
             throw new Error('"props" has to be an Object with key value pairs');
         }
 
         this.render();
+    }
+
+    setProps(props) {
+        let oldProps = this.props;
+
+        this.props = Object.assign(oldProps, props);
     }
 
     /**

@@ -21,7 +21,10 @@ class NFQReflowTreeClass {
      * @returns {String} MD5 Hash for this Component.
      */
     addNode(node, renderedTemplate) {
-        node.hash = (node.hash !== null) ? node.hash : this.generateUUID();
+        if (node.hash === null) {
+            node.hash = this.generateUUID();
+            this.numberOfValues++;
+        }
 
         this.nodeTree[node.hash] = {
             node: node,
@@ -30,8 +33,6 @@ class NFQReflowTreeClass {
         };
 
         this.updateParent(node);
-
-        this.numberOfValues++;
 
         return node.hash;
     }
@@ -105,13 +106,14 @@ class NFQReflowTreeClass {
     /**
      * Cleans up hashmap tree.
      *
-     * @param {NFQReflowComponent} node Component node.
+     * @param {NFQReflowComponent} node       Component node.
+     * @param {mixed}              usedChilds Childs used at the moment.
      */
-    clean(node) {
+    clean(node, usedChilds) {
         /* eslint-disable no-magic-numbers */
         let index;
         let children = this.findChildren(node.hash);
-        let nodeChilds = this.getChilds(node);
+        let nodeChilds = this.getChilds(node, usedChilds);
         let diff = children.filter(
             function(i) {
                 return nodeChilds.indexOf(i) < 0;
@@ -147,16 +149,19 @@ class NFQReflowTreeClass {
     /**
      * Gets all child hashes of the actual node.
      *
-     * @param {NFQReflowComponent} node Component node.
+     * @param {NFQReflowComponent} node       Component node.
+     * @param {mixed}              usedChilds Childs used at the moment.
      *
      * @return {Array} Array of child hashes.
      */
-    getChilds(node) {
+    getChilds(node, usedChilds) {
         /* eslint-disable no-unused-vars */
         let param, child, ret = [];
 
         for ([param, child] of Object.entries(node.children)) {
-            ret.push(child.hash);
+            if (usedChilds.indexOf(param) !== -1) {
+                ret.push(child.hash);
+            }
         }
 
         return ret;
