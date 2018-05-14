@@ -11,6 +11,7 @@ class NFQReflowStoreClass {
 
         if (!this.stores.hasOwnProperty(name)) {
             this.stores[name] = {};
+            this.stores[name].tmp = tmp;
         }
 
         if (!tmp) {
@@ -44,7 +45,12 @@ class NFQReflowStoreClass {
         let index;
 
         objectPath.set(this.stores[storeName], storePath, storeValue);
-        localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
+
+        if (!this.stores[storeName].tmp) {
+            localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
+        } else {
+            sessionStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
+        }
 
         for (index in this.registeredComponents[storeName]) {
             this.registeredComponents[storeName][index].comp[this.registeredComponents[storeName][index].callback]();
