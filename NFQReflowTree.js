@@ -59,7 +59,7 @@ class NFQReflowTreeClass {
      */
     checkNode(node) {
         const nodeString = JSON.stringify(node);
-        const tmpNode = this.find(null);
+        const tmpNode = this.find(node.hash);
 
         return (tmpNode === null) ? true : !(nodeString === tmpNode.nodeTmp);
     }
