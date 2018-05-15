@@ -103,7 +103,7 @@ class NFQReflowComponent {
 
             component = (NFQReflowTree.find(child.hash))
                 ? NFQReflowTree.find(child.hash).node
-                : new child.component(usableProperties);
+                : new child.component(usableProperties, child.children || {});
 
             if (component.parent === null) {
                 parentNode = component.createParentNode();
