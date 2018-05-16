@@ -6,15 +6,15 @@ class NFQReflowStoreClass {
         this.stores = {};
     }
 
-    createStore(name, tmp) {
+    createStore(name, perm) {
         let store;
 
         if (!this.stores.hasOwnProperty(name)) {
             this.stores[name] = {};
-            this.stores[name].tmp = tmp;
+            this.stores[name].perm = perm;
         }
 
-        if (!tmp) {
+        if (perm) {
             store = localStorage;
         } else {
             store = sessionStorage;
@@ -46,7 +46,7 @@ class NFQReflowStoreClass {
 
         objectPath.set(this.stores[storeName], storePath, storeValue);
 
-        if (!this.stores[storeName].tmp) {
+        if (this.stores[storeName].perm) {
             localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
         } else {
             sessionStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
