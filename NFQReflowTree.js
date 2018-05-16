@@ -122,8 +122,24 @@ class NFQReflowTreeClass {
         /* eslint-enable no-magic-numbers */
 
         for (index in diff) {
-            NFQReflowStore.clean(diff[index]);
-            this.removeNode(diff[index]);
+            this.killChildren(diff[index]);
+        }
+    }
+
+    /**
+     * Recursively deletes all Children.
+     *
+     * @param {string} hash Node Hash.
+     */
+    killChildren(hash) {
+        let children = this.findChildren(hash);
+        let index;
+
+        NFQReflowStore.clean(hash);
+        this.removeNode(hash);
+
+        for (index in children) {
+            this.killChildren(children[index]);
         }
     }
 
