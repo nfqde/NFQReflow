@@ -53,7 +53,10 @@ class NFQReflowStoreClass {
         }
 
         for (index in this.registeredComponents[storeName]) {
-            if (this.registeredComponents[storeName][index].path === storePath) {
+            if (
+                this.registeredComponents[storeName][index].path === storePath
+                || this.registeredComponents[storeName][index].path === 'all'
+            ) {
                 this.registeredComponents[storeName][index].comp[this.registeredComponents[storeName][index].callback]();
             }
         }
