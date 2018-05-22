@@ -71,10 +71,10 @@ class NFQReflowStoreClass {
                     indizes.push(index);
                 }
             }
-        }
 
-        for (i = indizes.length - 1; i >= 0; i--) {
-            this.registeredComponents[store].splice(indizes[i], 1);
+            for (i = indizes.length - 1; i >= 0; i--) {
+                this.registeredComponents[store].splice(indizes[i], 1);
+            }
         }
     }
 }
