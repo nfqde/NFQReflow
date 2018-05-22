@@ -9,7 +9,7 @@ class NFQReflowStoreClass {
     initStores(storeObject) {
         let store;
         
-        for (store of storeObject) {
+        for (store in storeObject) {
             this.createStore(store, storeObject[store].perm);
             
             if (
