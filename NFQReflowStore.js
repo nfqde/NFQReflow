@@ -5,6 +5,21 @@ class NFQReflowStoreClass {
         this.registeredComponents = {};
         this.stores = {};
     }
+    
+    initStores(storeObject) {
+        let store;
+        
+        for (store of storeObject) {
+            this.createStore(store, storeObject[store].perm);
+            
+            if (
+                (Object.keys(this.stores[store]).length === 0 && this.stores[store].constructor === Object)
+                || (Object.keys(this.stores[store]).length === 1 && this.stores[store].perm === true)
+            ) {
+                this.saveToStore(store, '', storeObject[store]);
+            }
+        }
+    }
 
     createStore(name, perm) {
         let store;
