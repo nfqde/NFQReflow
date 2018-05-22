@@ -16,7 +16,7 @@ class NFQReflowStoreClass {
                 (Object.keys(this.stores[store]).length === 0 && this.stores[store].constructor === Object)
                 || (Object.keys(this.stores[store]).length === 1 && this.stores[store].perm === true)
             ) {
-                this.saveToStore(store, '', storeObject[store]);
+                this.saveToStore(store, null, storeObject[store]);
             }
         }
     }
@@ -58,8 +58,12 @@ class NFQReflowStoreClass {
 
     saveToStore(storeName, storePath, storeValue) {
         let index;
-
-        objectPath.set(this.stores[storeName], storePath, storeValue);
+        
+        if (storePath === null) {
+            this.stores[storeName] = storeValue;
+        } else {
+            objectPath.set(this.stores[storeName], storePath, storeValue);
+        }
 
         if (this.stores[storeName].perm) {
             localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
