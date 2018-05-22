@@ -8,21 +8,17 @@ class NFQReflowStoreClass {
     
     initStores(storeObject) {
         let store;
-        
+
         for (store in storeObject) {
-            this.createStore(store, storeObject[store].perm);
-            
-            if (
-                (Object.keys(this.stores[store]).length === 0 && this.stores[store].constructor === Object)
-                || (Object.keys(this.stores[store]).length === 1 && this.stores[store].perm === true)
-            ) {
-                this.saveToStore(store, null, storeObject[store]);
+            if (!this.createStore(store, storeObject[store].perm)) {
+                this.save(store, null, storeObject[store]);
             }
         }
     }
 
     createStore(name, perm) {
         let store;
+        let exists = false;
 
         if (!this.stores.hasOwnProperty(name)) {
             this.stores[name] = {};
@@ -37,9 +33,13 @@ class NFQReflowStoreClass {
 
         if (store.getItem(name) !== null) {
             this.stores[name] = JSON.parse(store.getItem(name));
+            exists = true;
         } else {
             store.setItem(name, '{}');
+            exists = false;
         }
+        
+        return exists;
     }
 
     load(storeName, storePath) {
@@ -56,6 +56,20 @@ class NFQReflowStoreClass {
         }
     }
 
+    save(storeName, storePath, storeValue) {
+        if (storePath === null) {
+            this.stores[storeName] = storeValue;
+        } else {
+            objectPath.set(this.stores[storeName], storePath, storeValue);
+        }
+        
+        if (this.stores[storeName].perm) {
+            localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
+        } else {
+            sessionStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
+        }
+    }
+
     saveToStore(storeName, storePath, storeValue) {
         let index;
         
@@ -64,7 +78,7 @@ class NFQReflowStoreClass {
         } else {
             objectPath.set(this.stores[storeName], storePath, storeValue);
         }
-
+        
         if (this.stores[storeName].perm) {
             localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
         } else {
