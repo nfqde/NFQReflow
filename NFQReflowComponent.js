@@ -76,7 +76,7 @@ class NFQReflowComponent {
     * @return {jQuery} Parent node.
     */
     createParentNode() {
-        return $(`<div class="${this.constructor.name}" style="display: none"></div>`);
+        return $(`<div class="${this.constructor.name}" style="opacity: 0"></div>`);
     }
 
     /**
@@ -287,7 +287,7 @@ class NFQReflowComponent {
     }
 
     onInternalRendered() {
-        TweenLite.to($(this.parent), 0.1, {opacity: 0});
+        TweenLite.to($(this.parent), 0.1, {opacity: 1});
     }
 
     /**
