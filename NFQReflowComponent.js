@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import {TweenLite} from 'gsap/TweenLite';
 import NFQReflowTree from './NFQReflowTree';
 import NFQReflowTemplateParser from './NFQReflowTemplateParser';
 
@@ -55,9 +56,11 @@ class NFQReflowComponent {
 
                 this.parent = parent;
             } else {
+                $(this.parent).css('display', 'none');
                 $(this.parent).html(NFQReflowTree.find(this.hash).rendered);
             }
 
+            requestAnimationFrame(this.onInternalRendered.bind(this));
             requestAnimationFrame(this.onRendered.bind(this));
             this.renderChildren();
         }
@@ -73,6 +76,7 @@ class NFQReflowComponent {
     * @return {jQuery} Parent node.
     */
     createParentNode() {
+        return $(`<div class="${this.constructor.name}" style="display: none"></div>`);
     }
 
     /**
@@ -280,6 +284,10 @@ class NFQReflowComponent {
         }
 
         this.render();
+    }
+
+    onInternalRendered() {
+        TweenLite.to($(this.parent), 0.1, {opacity: 0});
     }
 
     /**
