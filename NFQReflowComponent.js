@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import {TweenLite} from 'gsap/TweenLite';
+import {TweenMax} from 'gsap/TweenMax';
 import NFQReflowTree from './NFQReflowTree';
 import NFQReflowTemplateParser from './NFQReflowTemplateParser';
 
@@ -56,7 +56,7 @@ class NFQReflowComponent {
 
                 this.parent = parent;
             } else {
-                $(this.parent).css('display', 'none');
+                $(this.parent).css('opacity', '0');
                 $(this.parent).html(NFQReflowTree.find(this.hash).rendered);
             }
 
@@ -287,7 +287,7 @@ class NFQReflowComponent {
     }
 
     onInternalRendered() {
-        TweenLite.to($(this.parent), 0.1, {opacity: 1});
+        TweenMax.to($(this.parent), 0.2, {opacity: 1});
     }
 
     /**
