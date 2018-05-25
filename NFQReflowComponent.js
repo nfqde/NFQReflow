@@ -17,6 +17,7 @@ class NFQReflowComponent {
         this.template;
         this.props = props || {};
         this.hash = null;
+        this.eventList = [];
         this.parentHash = this.props.parentHash || null;
         this.parentIndex = this.props.parentIndex || 0;
         this.children = {};
@@ -72,7 +73,6 @@ class NFQReflowComponent {
     * @return {jQuery} Parent node.
     */
     createParentNode() {
-        return $(`<div class="${this.constructor.name}"></div>`);
     }
 
     /**
@@ -170,7 +170,7 @@ class NFQReflowComponent {
     * @return {Object} Returns the object with new properties.
     */
     addSpecialProps(child, index) {
-        const component = JSON.parse(JSON.stringify(child));
+        const component = Object.assign({}, child);
 
         if (typeof component.props === 'undefined') {
             component.props = {};
@@ -216,7 +216,19 @@ class NFQReflowComponent {
     * @return {jQuery} Found jQuery DOM object.
     */
     on(selector, event, callback) {
-        selector.off(event).on(event, callback);
+        let hashEvent = `${event}.${this.hash}`;
+        let def;
+
+        selector.off(hashEvent).on(hashEvent, callback);
+
+        if (this.eventList.indexOf(hashEvent) === -1) {
+            def = {
+                selector: selector,
+                hashEvent: hashEvent
+            };
+
+            this.eventList.push(def);
+        }
     }
 
     /**

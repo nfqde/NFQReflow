@@ -29,7 +29,7 @@ class NFQReflowTreeClass {
         this.nodeTree[node.hash] = {
             node: node,
             rendered: renderedTemplate,
-            nodeTmp: JSON.stringify(node)
+            nodeTmp: this.circleSaveStringify(node)
         };
 
         this.updateParent(node);
@@ -47,7 +47,7 @@ class NFQReflowTreeClass {
 
         if (node.parentHash !== null) {
             parent = this.find(node.parentHash);
-            parent.nodeTmp = JSON.stringify(parent.node);
+            parent.nodeTmp = this.circleSaveStringify(parent.node);
         }
     }
 
@@ -59,7 +59,7 @@ class NFQReflowTreeClass {
      * @return {Boolean} Same or not.
      */
     checkNode(node) {
-        const nodeString = JSON.stringify(node);
+        const nodeString = this.circleSaveStringify(node);
         const tmpNode = this.find(node.hash);
 
         return (tmpNode === null) ? true : !(nodeString === tmpNode.nodeTmp);
@@ -71,8 +71,20 @@ class NFQReflowTreeClass {
      * @param {String} hash Hash of item.
      */
     removeNode(hash) {
+        this.unsetEvents(this.nodeTree[hash]);
         delete this.nodeTree[hash];
         this.numberOfValues--;
+    }
+
+    /**
+     * Unsets all Events for this Component
+     *
+     * @param {NFQReflowTreeComponent} node Node Branch.
+     */
+    unsetEvents(node) {
+        node.node.eventList.forEach((event) => {
+            event.selector.off(event.hashEvent);
+        });
     }
 
     /**
@@ -201,6 +213,29 @@ class NFQReflowTreeClass {
             (c ^ crypto.getRandomValues(new Uint8Array(Uint8ArrayKey))[0] & Uint8ArraySalt >> c / divider).toString(StringBit)
         );
         /* eslint-enable max-len */
+    }
+
+    /**
+     * JSON Stringify Circular save.
+     *
+     * @param {NFQReflowComponent} obj Component.
+     *
+     * @returns {String} JSON of given Object.
+     */
+    circleSaveStringify(obj) {
+        const cache = new Map();
+
+        return JSON.stringify(obj, (key, value) => {
+            if (typeof value === 'object' && value !== null) {
+                if (cache.get(value)) {
+                    return;
+                }
+
+                cache.set(value, true);
+            }
+
+            return value;
+        });
     }
 }
 

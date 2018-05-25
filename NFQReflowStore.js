@@ -5,7 +5,7 @@ class NFQReflowStoreClass {
         this.registeredComponents = {};
         this.stores = {};
     }
-    
+
     initStores(storeObject) {
         let store;
 
@@ -38,7 +38,7 @@ class NFQReflowStoreClass {
             store.setItem(name, '{}');
             exists = false;
         }
-        
+
         return exists;
     }
 
@@ -62,7 +62,7 @@ class NFQReflowStoreClass {
         } else {
             objectPath.set(this.stores[storeName], storePath, storeValue);
         }
-        
+
         if (this.stores[storeName].perm) {
             localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
         } else {
@@ -72,13 +72,13 @@ class NFQReflowStoreClass {
 
     saveToStore(storeName, storePath, storeValue) {
         let index;
-        
+
         if (storePath === null) {
             this.stores[storeName] = storeValue;
         } else {
             objectPath.set(this.stores[storeName], storePath, storeValue);
         }
-        
+
         if (this.stores[storeName].perm) {
             localStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
         } else {
