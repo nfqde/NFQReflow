@@ -263,6 +263,10 @@ class NFQReflowComponent {
         this.props = Object.assign(oldProps, props);
     }
 
+    cleanSelf() {
+        NFQReflowTree.killChildren(this.hash);
+    }
+
     /**
      * Sets the value of an property and renders the component.
      *
