@@ -18,7 +18,7 @@ class NFQReflowComponent {
         this.template;
         this.props = props || {};
         this.hash = null;
-        this.eventList = [];
+        this.eventList = {};
         this.parentHash = this.props.parentHash || null;
         this.parentIndex = this.props.parentIndex || 0;
         this.children = {};
@@ -215,23 +215,39 @@ class NFQReflowComponent {
     *
     * @param {jQuery}   selector DOM selection.
     * @param {string}   event    Event Type.
+    * @param {string}   eventId  Event Id.
     * @param {function} callback Event Handler.
-    *
-    * @return {jQuery} Found jQuery DOM object.
     */
-    on(selector, event, callback) {
-        let hashEvent = `${event}.${this.hash}`;
-        let def;
+    on(selector, event, eventId, callback) {
+        let hashEvent = `${event}.${eventId}${this.hash}`;
 
         selector.off(hashEvent).on(hashEvent, callback);
 
-        if (this.eventList.indexOf(hashEvent) === -1) {
-            def = {
+        if (!this.eventList.hasOwnProperty(eventId)) {
+            this.eventList[eventId] = {
                 selector: selector,
-                hashEvent: hashEvent
+                hash: hashEvent,
+                callback: callback
             };
+        }
+    }
 
-            this.eventList.push(def);
+    /**
+    * Removes an double Save eventHandler.
+    *
+    * @param {String} eventId ID for the Event to kill.
+    */
+    off(eventId) {
+        let selector, hash, callback;
+
+        if (this.eventList.hasOwnProperty(eventId)) {
+            selector = this.eventList[eventId].selector;
+            hash = this.eventList[eventId].hash;
+            callback = this.eventList[eventId].callback;
+
+            selector.off(hash, callback);
+
+            delete(this.eventList[eventId]);
         }
     }
 

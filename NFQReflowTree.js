@@ -82,9 +82,11 @@ class NFQReflowTreeClass {
      * @param {NFQReflowTreeComponent} node Node Branch.
      */
     unsetEvents(node) {
-        node.node.eventList.forEach((event) => {
-            event.selector.off(event.hashEvent);
-        });
+        let eventList = node.node.eventList, event;
+
+        for (event in eventList) {
+            node.node.off(event);
+        }
     }
 
     /**
