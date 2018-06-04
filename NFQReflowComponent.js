@@ -279,6 +279,9 @@ class NFQReflowComponent {
         this.props = Object.assign(oldProps, props);
     }
 
+    /**
+     * Cleans up Component from Tree.
+     */
     cleanSelf() {
         NFQReflowTree.killChildren(this.hash);
     }
@@ -296,14 +299,17 @@ class NFQReflowComponent {
                 if (val === null) {
                     delete(this.children[child]);
                 } else {
-                    this.children[child] = val;
+                    if (this.children.hasOwnProperty(child) && this.children[child].component === val.component) {
+                        NFQReflowTree.find(this.children[child].hash).node.setProp(val.props);
+                    } else {
+                        this.children[child] = val;
+                        this.render();
+                    }
                 }
             }
         } else {
             throw new Error('"childs" has to be an Object with key value pairs');
         }
-
-        this.render();
     }
 
     onInternalRendered() {
