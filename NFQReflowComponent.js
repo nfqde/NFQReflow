@@ -299,7 +299,11 @@ class NFQReflowComponent {
                 if (val === null) {
                     delete(this.children[child]);
                 } else {
-                    if (this.children.hasOwnProperty(child) && this.children[child].component === val.component) {
+                    if (
+                        this.children.hasOwnProperty(child)
+                        && this.children[child].component === val.component
+                        && typeof this.children[child].hash !== 'undefined'
+                    ) {
                         NFQReflowTree.find(this.children[child].hash).node.setProp(val.props);
                     } else {
                         this.children[child] = val;
