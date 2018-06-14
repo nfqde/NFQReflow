@@ -44,10 +44,10 @@ class NFQReflowStoreClass {
 
     load(storeName, storePath) {
         if (typeof storePath === 'undefined') {
-            return objectPath.get(this.stores, storeName) || null;
+            return objectPath.get(this.stores, storeName);
         }
 
-        return objectPath.get(this.stores[storeName], storePath) || null;
+        return objectPath.get(this.stores[storeName], storePath);
     }
 
     registerForUpdates(component, callbackName, storeName, storePath) {
