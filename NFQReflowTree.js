@@ -10,6 +10,7 @@ class NFQReflowTreeClass {
     constructor() {
         this.nodeTree = {};
         this.numberOfValues = 0;
+        this.callStack = [];
     }
 
     /**
@@ -196,6 +197,43 @@ class NFQReflowTreeClass {
 
         return ret;
         /* eslint-enable no-unused-vars */
+    }
+
+    /**
+     * Adds an node to the CallStack
+     *
+     * @param {String} hash Hash of the Component.
+     */
+    addToCallStack(hash) {
+        this.callStack.push(hash);
+    }
+
+    /**
+     * Gets CallStack position
+     *
+     * @param {String} hash Hash of the Component.
+     */
+    getCallStackPosition(hash) {
+        let index = this.callStack.indexOf(hash);
+
+        if (index > -1) {
+            return index;
+        }
+
+        return null
+    }
+
+    /**
+     * Removes an node from the CallStack
+     *
+     * @param {String} hash Hash of the Component.
+     */
+    removeFromCallStack(hash) {
+        let index = this.callStack.indexOf(hash);
+
+        if (index > -1) {
+            this.callStack.splice(index, 1);
+        }
     }
 
     /**

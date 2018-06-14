@@ -48,6 +48,8 @@ class NFQReflowComponent {
         if (NFQReflowTree.checkNode(this)) {
             this.addToTree();
 
+            NFQReflowTree.addToCallStack(this.hash);
+
             if (this.parent === null) {
                 parent = this.createParentNode();
                 parent.html(NFQReflowTree.find(this.hash).rendered);
@@ -63,6 +65,8 @@ class NFQReflowComponent {
             requestAnimationFrame(this.onInternalRendered.bind(this));
             requestAnimationFrame(this.onRendered.bind(this));
             this.renderChildren();
+
+            NFQReflowTree.removeFromCallStack(this.hash);
         }
 
         requestAnimationFrame(this.onRegisterEvents.bind(this));
@@ -125,7 +129,7 @@ class NFQReflowComponent {
             i++;
         }
 
-        requestAnimationFrame(this.onChildsRendered.bind(this));
+        this.propagadeChildsRendered();
     }
 
     /**
@@ -197,6 +201,25 @@ class NFQReflowComponent {
         /* eslint-disable no-useless-escape */
         return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
         /* eslint-enable no-useless-escape */
+    }
+
+    /**
+    * Propagades onChildsRendered Event up.
+    *
+    * @param {NFQReflowComponent} target Originated Target.
+    */
+    propagadeChildsRendered(target = null) {
+        if (NFQReflowTree.getCallStackPosition(this.hash) === null) {
+            if (this.parentHash !== null) {
+                NFQReflowTree.find(this.parentHash).node.propagadeChildsRendered(target);
+            }
+        } else if (NFQReflowTree.getCallStackPosition(this.hash) === 0) {
+            if (this.parentHash !== null) {
+                NFQReflowTree.find(this.parentHash).node.propagadeChildsRendered(this);
+            }
+        }
+
+        requestAnimationFrame(this.onChildsRendered.bind(this, target));
     }
 
     /**
