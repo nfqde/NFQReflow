@@ -62,13 +62,13 @@ class NFQReflowStoreClass {
     }
 
     save(storeName, storePath, storeValue) {
+        if ((typeof storeValue === 'object' && storeValue !== null) || typeof storeValue === 'function') {
+            storeValue = merge({}, storeValue, {arrayMerge: (dest, source) => source});
+        }
+
         if (storePath === null) {
             this.stores[storeName] = storeValue;
         } else {
-            if ((typeof storeValue === 'object' && storeValue !== null) || typeof storeValue === 'function') {
-                storeValue = merge({}, storeValue, {arrayMerge: (dest, source) => source});
-            }
-
             objectPath.set(this.stores[storeName], storePath, storeValue);
         }
 
@@ -81,6 +81,10 @@ class NFQReflowStoreClass {
 
     saveToStore(storeName, storePath, storeValue) {
         let index;
+
+        if ((typeof storeValue === 'object' && storeValue !== null) || typeof storeValue === 'function') {
+            storeValue = merge({}, storeValue, {arrayMerge: (dest, source) => source});
+        }
 
         if (storePath === null) {
             this.stores[storeName] = storeValue;
