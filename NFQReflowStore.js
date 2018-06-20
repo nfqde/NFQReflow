@@ -1,4 +1,5 @@
 import objectPath from 'object-path';
+import merge from 'deepmerge';
 
 class NFQReflowStoreClass {
     constructor() {
@@ -64,6 +65,10 @@ class NFQReflowStoreClass {
         if (storePath === null) {
             this.stores[storeName] = storeValue;
         } else {
+            if ((typeof storeValue === 'object' && storeValue !== null) || typeof storeValue === 'function') {
+                storeValue = merge({}, storeValue, {arrayMerge: (dest, source) => source});
+            }
+
             objectPath.set(this.stores[storeName], storePath, storeValue);
         }
 
