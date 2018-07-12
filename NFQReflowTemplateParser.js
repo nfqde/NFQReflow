@@ -1,3 +1,5 @@
+import $ from 'jquery';
+
 /**
  * Reflow Template Parser.
  */
@@ -14,12 +16,6 @@ export default class NFQReflowTemplateParser {
         this.children = children;
         this.template = template;
         this.foundChildren = [];
-
-        this.nodes = {
-            functions: [],
-            params: [],
-            empty: []
-        };
     }
 
     /**
@@ -28,46 +24,53 @@ export default class NFQReflowTemplateParser {
      * @return {String} Rendered Template.
      */
     parse() {
+        this.functionStep();
+        this.paramsStep();
+        this.childStep();
+        this.cleanEmpty();
+
+        return this.template;
+    }
+
+    functionStep() {
         let regex = /\$\{(.*?)\}/g;
-        let matches, match, functions, param, empty;
+        let matches, match, functionNodes = [];
 
         while ((matches = regex.exec(this.template)) !== null) {
             match = matches[1];
 
             if (this.props.hasOwnProperty(match)) {
                 if (typeof this.props[match] === 'function') {
-                    this.nodes.functions.push(match);
-                } else {
-                    this.nodes.params.push(match);
+                    functionNodes.push(match);
                 }
-            } else if (this.children.hasOwnProperty(match)) {
-                continue;
-            } else {
-                this.nodes.empty.push(match);
             }
         }
 
-        for (functions of this.nodes.functions) {
+        for (const functions of functionNodes) {
             this.parseFunctions(functions);
         }
-
-        for (param of this.nodes.params) {
-            this.parseParams(param);
-        }
-
-        for (empty of this.nodes.empty) {
-            this.parseEmpty(empty);
-        }
-
-        return this.template;
     }
 
-    /**
-     * Parses an Component Template for Childs.
-     *
-     * @return {mixed} Rendered Template childs.
-     */
-    getUsedChilds() {
+    paramsStep() {
+        let regex = /\$\{(.*?)\}/g;
+        let matches, match, params = [];
+
+        while ((matches = regex.exec(this.template)) !== null) {
+            match = matches[1];
+
+            if (this.props.hasOwnProperty(match)) {
+                if (typeof this.props[match] !== 'function') {
+                    params.push(match);
+                }
+            }
+        }
+
+        for (const param of params) {
+            this.parseParams(param);
+        }
+    }
+
+    childStep() {
         let regex = /\$\{(.*?)\}/g;
         let matches, match;
 
@@ -79,14 +82,91 @@ export default class NFQReflowTemplateParser {
             }
         }
 
+        for (const child of this.foundChildren) {
+            this.parseChildren(child);
+        }
+    }
+
+    cleanEmpty() {
+        let regex = /\$\{(.*?)\}/g;
+        let matches, match, emptys = [];
+
+        while ((matches = regex.exec(this.template)) !== null) {
+            match = matches[1];
+
+            emptys.push(match)
+        }
+
+        for (const empty of emptys) {
+            this.parseEmpty(empty);
+        }
+    }
+
+    /**
+     * Parses an Component Template for Childs.
+     *
+     * @return {mixed} Rendered Template childs.
+     */
+    getUsedChilds() {
         return this.foundChildren;
     }
 
     /**
-    * Parses empty Nodes.
-    *
-    * @param {String} param Param match.
-    */
+     * Parses child text Nodes to Template tags.
+     *
+     * @param {String} child Child param.
+     */
+    parseChildren(child) {
+        const regex = new RegExp(`\\$\\{${this.escapeRegex(child)}\\}`);
+
+        this.template = this.template.replace(regex, `<template id="${child}"></template>`);
+
+        /*$(this.template).find(':not(iframe)').addBack().contents().filter(this.findTextNode).each(
+            this.replaceComponent.bind($(this), regex, child)
+        );*/
+    }
+
+    /**
+     * Replaces textnodes with components.
+     *
+     * @param {RegExp}  regex      Regex to filter for.
+     * @param {String}  param      Param name to look for in text nodes.
+     * @param {jQuery}  parentNode Parent node to replace the text with.
+     * @param {Number}  index      Found element index.
+     * @param {DOMNode} value      DOM node.
+     *
+     * @return {Boolean} Found or not.
+     */
+    replaceComponent(regex, param, index, value) {
+        let replaceWith;
+        let ret = true;
+
+        if (regex.test(value.textContent)) {
+            replaceWith = value.textContent.replace(regex, `<template id="${param}"></template>`);
+            $(value).replaceWith(replaceWith);
+
+            ret = false;
+        }
+
+        return ret;
+    }
+
+    /**
+     * Filters only Textnodes.
+     *
+     * @return {Boolean} Is it text.
+     */
+    findTextNode() {
+        const textNodeId = 3;
+
+        return this.nodeType === textNodeId;
+    }
+
+    /**
+     * Parses empty Nodes.
+     *
+     * @param {String} param Param match.
+     */
     parseEmpty(param) {
         const regex = new RegExp(`\\$\\{${this.escapeRegex(param)}\\}`, 'g');
 
@@ -94,10 +174,10 @@ export default class NFQReflowTemplateParser {
     }
 
     /**
-    * Parses params.
-    *
-    * @param {String} param Param match.
-    */
+     * Parses params.
+     *
+     * @param {String} param Param match.
+     */
     parseParams(param) {
         const regex = new RegExp(`\\$\\{${this.escapeRegex(param)}\\}`, 'g');
 
@@ -105,10 +185,10 @@ export default class NFQReflowTemplateParser {
     }
 
     /**
-    * Parses Template functions.
-    *
-    * @param {String} param Param match.
-    */
+     * Parses Template functions.
+     *
+     * @param {String} param Param match.
+     */
     parseFunctions(param) {
         let ret = this.props[param]();
         const regex = new RegExp(`\\$\\{${this.escapeRegex(param)}\\}`, 'g');
@@ -121,12 +201,12 @@ export default class NFQReflowTemplateParser {
     }
 
     /**
-    * Escapes an regex.
-    *
-    * @param {string} s String to escape.
-    *
-    * @return {string} Escaped regex.
-    */
+     * Escapes an regex.
+     *
+     * @param {string} s String to escape.
+     *
+     * @return {string} Escaped regex.
+     */
     escapeRegex(s) {
         /* eslint-disable no-useless-escape */
         return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');

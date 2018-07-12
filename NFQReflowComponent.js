@@ -51,15 +51,17 @@ class NFQReflowComponent {
             NFQReflowTree.addToCallStack(this.hash);
 
             if (this.parent === null) {
-                parent = this.createParentNode();
-                parent.html(NFQReflowTree.find(this.hash).rendered);
+                parent = $(NFQReflowTree.find(this.hash).rendered);
 
                 $('body').prepend(parent);
 
                 this.parent = parent;
             } else {
-                $(this.parent).css('opacity', '0');
-                $(this.parent).html(NFQReflowTree.find(this.hash).rendered);
+                parent = $(NFQReflowTree.find(this.hash).rendered);
+                parent.css('opacity', '0');
+                $(this.parent).replaceWith(parent);
+
+                this.parent = parent;
             }
 
             requestAnimationFrame(this.onInternalRendered.bind(this));
@@ -67,20 +69,26 @@ class NFQReflowComponent {
             this.renderChildren();
 
             NFQReflowTree.removeFromCallStack(this.hash);
+        } else {
+            if (this.parent === null) {
+                parent = $(NFQReflowTree.find(this.hash).rendered);
+
+                $('body').prepend(parent);
+
+                this.parent = parent;
+            } else {
+                parent = $(NFQReflowTree.find(this.hash).rendered);
+                $(this.parent).replaceWith(parent);
+
+                this.parent = parent;
+
+                this.renderChildren();
+            }
         }
 
         requestAnimationFrame(this.onRegisterEvents.bind(this));
 
         return this.hash;
-    }
-
-    /**
-    * Creates the parent node.
-    *
-    * @return {jQuery} Parent node.
-    */
-    createParentNode() {
-        return $(`<div class="${this.constructor.name}" style="opacity: 0"></div>`);
     }
 
     /**
@@ -96,7 +104,7 @@ class NFQReflowComponent {
     * Renders child components.
     */
     renderChildren() {
-        let param, child, regex, component, usableProperties, parentNode, i = 0;
+        let param, child, component, usableProperties, i = 0;
 
         NFQReflowTree.clean(this, this.usedChildren);
 
@@ -105,68 +113,19 @@ class NFQReflowComponent {
                 continue;
             }
 
-            regex = new RegExp(`\\$\\{${this.escapeRegex(param)}\\}`);
-
             usableProperties = this.addSpecialProps(child, i);
 
             component = (NFQReflowTree.find(child.hash))
                 ? NFQReflowTree.find(child.hash).node
                 : new child.component(usableProperties, child.children || {});
 
-            if (component.parent === null) {
-                parentNode = component.createParentNode();
-            } else {
-                parentNode = component.parent;
-            }
-
-            this.parent.find(':not(iframe)').addBack().contents().filter(this.findTextNode).each(
-                this.replaceComponent.bind($(this), regex, param, parentNode)
-            );
-
-            component.setParent(parentNode);
+            component.setParent(this.parent.find(`#${param}`));
             child.hash = component.render();
 
             i++;
         }
 
         this.propagadeChildsRendered();
-    }
-
-    /**
-    * Replaces textnodes with components.
-    *
-    * @param {RegExp}  regex      Regex to filter for.
-    * @param {String}  param      Param name to look for in text nodes.
-    * @param {jQuery}  parentNode Parent node to replace the text with.
-    * @param {Number}  index      Found element index.
-    * @param {DOMNode} value      DOM node.
-    *
-    * @return {Boolean} Found or not.
-    */
-    replaceComponent(regex, param, parentNode, index, value) {
-        let replaceWith;
-        let ret = true;
-
-        if (regex.test(value.textContent)) {
-            replaceWith = value.textContent.replace(regex, `<span id="${param}"></span>`);
-            $(value).replaceWith(replaceWith);
-            $(`#${param}`).replaceWith(parentNode);
-
-            ret = false;
-        }
-
-        return ret;
-    }
-
-    /**
-    * Filters only Textnodes.
-    *
-    * @return {Boolean} Is it text.
-    */
-    findTextNode() {
-        const textNodeId = 3;
-
-        return this.nodeType === textNodeId;
     }
 
     /**
