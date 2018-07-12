@@ -1,6 +1,6 @@
 {
   "name": "@nfq/reflow",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Nfq Templating component for DOM rendering",
   "main": "index.js",
   "scripts": {
