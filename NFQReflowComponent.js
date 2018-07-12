@@ -299,6 +299,10 @@ class NFQReflowComponent {
     }
 
     onInternalRendered() {
+        if (this.props.customClass) {
+            this.parent.addClass(this.props.customClass);
+        }
+
         TweenMax.to($(this.parent), 0.2, {opacity: 1});
     }
 
