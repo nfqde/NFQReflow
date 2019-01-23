@@ -80,8 +80,6 @@ class NFQReflowStoreClass {
     }
 
     saveToStore(storeName, storePath, storeValue) {
-        let index;
-
         if ((typeof storeValue === 'object' && storeValue !== null) || typeof storeValue === 'function') {
             storeValue = merge({}, storeValue, {arrayMerge: (dest, source) => source});
         }
@@ -98,7 +96,7 @@ class NFQReflowStoreClass {
             sessionStorage.setItem(storeName, JSON.stringify(this.stores[storeName]));
         }
 
-        for (index in this.registeredComponents[storeName]) {
+        for (let index in this.registeredComponents[storeName]) {
             if (
                 this.registeredComponents[storeName][index].path === storePath
                 || this.registeredComponents[storeName][index].path === 'all'
@@ -106,6 +104,50 @@ class NFQReflowStoreClass {
                 this.registeredComponents[storeName][index].comp[this.registeredComponents[storeName][index].callback]();
             }
         }
+    }
+
+    saveToStoreBulk(arr) {
+        let batch = {};
+
+        arr.forEach((item) => {
+            if (typeof batch[item.storeName] === 'undefined') {
+                batch[item.storeName] = [];
+            }
+
+            if ((typeof item.storeValue === 'object' && item.storeValue !== null) || typeof item.storeValue === 'function') {
+                item.storeValue = merge({}, item.storeValue, {arrayMerge: (dest, source) => source});
+            }
+
+            if (item.storePath === null) {
+                this.stores[item.storeName] = item.storeValue;
+            } else {
+                objectPath.set(this.stores[item.storeName], item.storePath, item.storeValue);
+            }
+
+            if (this.stores[item.storeName].perm) {
+                localStorage.setItem(item.storeName, JSON.stringify(this.stores[item.storeName]));
+            } else {
+                sessionStorage.setItem(item.storeName, JSON.stringify(this.stores[item.storeName]));
+            }
+        });
+
+        arr.forEach((item) => {
+            for (let index in this.registeredComponents[item.storeName]) {
+                if (
+                    this.registeredComponents[item.storeName][index].path === item.storePath
+                    || (
+                        this.registeredComponents[item.storeName][index].path === 'all'
+                        && !batch[item.storeName].find(x => x === this.registeredComponents[item.storeName][index].comp)
+                    )
+                ) {
+                    if (this.registeredComponents[item.storeName][index].path === 'all') {
+                        batch[item.storeName].push(this.registeredComponents[item.storeName][index].comp);
+                    }
+
+                    this.registeredComponents[item.storeName][index].comp[this.registeredComponents[item.storeName][index].callback]();
+                }
+            }
+        });
     }
 
     clean(hash) {

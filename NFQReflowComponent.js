@@ -65,25 +65,27 @@ class NFQReflowComponent {
             }
 
             requestAnimationFrame(this.onInternalRendered.bind(this));
+            if (this.initial) {
+                requestAnimationFrame(this.onInit.bind(this));
+                this.setConstruct(false);
+            }
             requestAnimationFrame(this.onRendered.bind(this));
             this.renderChildren();
 
             NFQReflowTree.removeFromCallStack(this.hash);
+        } else if (this.parent === null) {
+            parent = $(NFQReflowTree.find(this.hash).rendered);
+
+            $('body').prepend(parent);
+
+            this.parent = parent;
         } else {
-            if (this.parent === null) {
-                parent = $(NFQReflowTree.find(this.hash).rendered);
+            parent = $(NFQReflowTree.find(this.hash).rendered);
+            $(this.parent).replaceWith(parent);
 
-                $('body').prepend(parent);
+            this.parent = parent;
 
-                this.parent = parent;
-            } else {
-                parent = $(NFQReflowTree.find(this.hash).rendered);
-                $(this.parent).replaceWith(parent);
-
-                this.parent = parent;
-
-                this.renderChildren();
-            }
+            this.renderChildren();
         }
 
         requestAnimationFrame(this.onRegisterEvents.bind(this));
@@ -101,6 +103,15 @@ class NFQReflowComponent {
     }
 
     /**
+    * Sets sets if it is newly constructed or cached.
+    *
+    * @param {jQuery} bool Parent node.
+    */
+    setConstruct(bool) {
+        this.initial = bool;
+    }
+
+    /**
     * Renders child components.
     */
     renderChildren() {
@@ -115,9 +126,12 @@ class NFQReflowComponent {
 
             usableProperties = this.addSpecialProps(child, i);
 
-            component = (NFQReflowTree.find(child.hash))
-                ? NFQReflowTree.find(child.hash).node
-                : new child.component(usableProperties, child.children || {});
+            if (NFQReflowTree.find(child.hash)) {
+                component = NFQReflowTree.find(child.hash).node;
+            } else {
+                component = new child.component(usableProperties, child.children || {});
+                component.setConstruct(true);
+            }
 
             component.setParent(this.parent.find(`#${param}`));
             child.hash = component.render();
@@ -189,7 +203,15 @@ class NFQReflowComponent {
     * @return {jQuery} Found jQuery DOM object.
     */
     find(selector) {
-        return this.parent.find(selector);
+        let obj;
+
+        if (this.parent.find(selector).length > 0) {
+            obj = this.parent.find(selector);
+        } else {
+            obj = this.parent.filter(selector);
+        }
+
+        return obj;
     }
 
     /**
@@ -203,11 +225,42 @@ class NFQReflowComponent {
     on(selector, event, eventId, callback) {
         let hashEvent = `${event}.${eventId}${this.hash}`;
 
+        if (selector === null) {
+            return;
+        }
+
         selector.off(hashEvent).on(hashEvent, callback);
 
         if (!this.eventList.hasOwnProperty(eventId)) {
             this.eventList[eventId] = {
                 selector: selector,
+                hash: hashEvent,
+                callback: callback
+            };
+        }
+    }
+
+    /**
+    * Adds an double Save eventHandler.
+    *
+    * @param {jQuery}   parentSelector DOM selection.
+    * @param {jQuery}   selector       DOM selection.
+    * @param {string}   event          Event Type.
+    * @param {string}   eventId        Event Id.
+    * @param {function} callback       Event Handler.
+    */
+    delegate(parentSelector, selector, event, eventId, callback) {
+        let hashEvent = `${event}.${eventId}${this.hash}`;
+
+        if (selector === null || parentSelector === null) {
+            return;
+        }
+
+        parentSelector.off(hashEvent).on(hashEvent, selector, callback);
+
+        if (!this.eventList.hasOwnProperty(eventId)) {
+            this.eventList[eventId] = {
+                selector: parentSelector,
                 hash: hashEvent,
                 callback: callback
             };
@@ -239,7 +292,7 @@ class NFQReflowComponent {
      * @param {Mixed} props The property object to set.
      */
     setProp(props) {
-        let prop, val, oldProps = this.props;
+        let oldProps = this.props;
 
         if (typeof props === 'object') {
             this.props = Object.assign(oldProps, props);
@@ -280,17 +333,15 @@ class NFQReflowComponent {
             for ([child, val] of Object.entries(childs)) {
                 if (val === null) {
                     delete(this.children[child]);
+                } else if (
+                    this.children.hasOwnProperty(child)
+                    && this.children[child].component === val.component
+                    && typeof this.children[child].hash !== 'undefined'
+                ) {
+                    NFQReflowTree.find(this.children[child].hash).node.setProp(val.props);
                 } else {
-                    if (
-                        this.children.hasOwnProperty(child)
-                        && this.children[child].component === val.component
-                        && typeof this.children[child].hash !== 'undefined'
-                    ) {
-                        NFQReflowTree.find(this.children[child].hash).node.setProp(val.props);
-                    } else {
-                        this.children[child] = val;
-                        this.render();
-                    }
+                    this.children[child] = val;
+                    this.render();
                 }
             }
         } else {
@@ -298,12 +349,24 @@ class NFQReflowComponent {
         }
     }
 
+    /**
+     * Initial render.
+     *
+     * @memberof NFQReflowComponent
+     */
     onInternalRendered() {
         if (this.props.customClass) {
             this.parent.addClass(this.props.customClass);
         }
 
         TweenMax.to($(this.parent), 0.2, {opacity: 1});
+    }
+
+    /**
+    * Gets called only one time upon construction.
+    */
+    onInit() {
+        /* For convenience. */
     }
 
     /**
